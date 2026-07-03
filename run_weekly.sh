@@ -17,25 +17,28 @@ echo "===== $(date '+%F %T') START =====" >> "$LOG"
 GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new" git pull --rebase --quiet origin main >> "$LOG" 2>&1 || true
 
 read -r -d '' PROMPT <<'EOF'
-你是「具身智能 + 大模型」三路进展周报的调研 agent。调研过去 7 天（重点最新）的进展，产出一份可快速扫完的 markdown 周报。
+你是「具身智能 + 大模型」五路进展周报的调研 agent。调研过去 7 天（重点最新）的进展，产出一份可快速扫完的 markdown 周报。
 
-铁律（三路通用）：
+铁律（五路通用）：
 - 联网搜索 + 逐条点开一手源核实（arXiv abs 页 / 官方 blog / GitHub / 权威媒体），确认标题+日期真实存在再写。
 - 每条标日期；公司/论文自报数字标【自报】；传闻/未核实/仅二手博客单列「⚠️传闻」。
 - 绝不编造 arXiv 编号、模型名或公司发布。arXiv 形如 YYMM.xxxxx，排除未来日期的伪造编号。
 - 无实质新进展的路/项，如实说「本周无可核实新动态」，别拿旧的或重复的凑。
+- 覆盖通用大模型（不限具身/多模态域）。每路最多列 5–6 条最值得的已核实要点，保持精简。
 
-三路：
+五路（注意边界，别互相重复）：
 第一路 — VLA / 遥操作 / 具身数据：新 VLA/操作策略模型（π/GR00T/Gemini Robotics/OpenVLA 系及开源新品）、世界模型造数、遥操作系统与灵巧手 retarget/力·触觉、新开源机器人数据集与真机 eval benchmark、大厂动态（PI/Figure/1X/NVIDIA/Tesla/Apptronik/Agility/Skild/智元/宇树/银河通用/千寻等）。
 第二路 — 多模态大模型：新多模态/VLM 模型发布（Qwen-VL、Gemini、GPT、Claude、国内多模态等）、多模态架构/训练/评测新工作、视觉编码器/长视频/OCR/多模态 agent。
-第三路 — 大模型部署 / 推理 infra：vLLM/SGLang/TensorRT-LLM 等推理框架更新、量化（FP8/NVFP4/GGUF/AWQ）、投机解码、KV cache/PagedAttention、服务化与调度、边缘/Jetson（Thor/Orin）部署、性能优化论文与工程实践。
+第三路 — 部署 / 推理 infra（系统级，不改模型权重）：推理框架更新（vLLM/SGLang/TensorRT-LLM 等）、调度与连续批处理、KV cache/PagedAttention、投机解码、算子/内核、服务化与分布式推理、边缘/Jetson(Thor/Orin)部署。注意：模型压缩/量化归第四路，本路不重复。
+第四路 — 轻量化 / 模型压缩（模型级，改模型权重）：量化（FP8/NVFP4/INT4/GGUF/AWQ/GPTQ 等）、剪枝、知识蒸馏、低秩分解、稀疏化（2:4 等）、KV cache 量化、小模型/高效架构。含相关论文与开源实现。
+第五路 — 训练进展（怎么训；"又发了个新模型"归第一/二路，本路不重复）：① 训练方法：后训练/RL（RLHF/DPO/GRPO/RLVR 等）、优化器（Muon 等）、长上下文训练、数据合成与配比、scaling law、MoE 训练技巧；② 训练系统：分布式并行（FSDP/Megatron/DeepSpeed/3D 并行）、显存优化（ZeRO/激活重算/offload）、通信优化、训练框架。
 
-输出：markdown，开头写本周时间范围，三路分节，每节内「✅ 已核实要点（每条带链接+日期）」与「⚠️ 传闻」两栏，每路末尾「本周最值得关注的 2–3 项」。整体简洁、重「新」和「可核实」。
+输出：markdown，开头写本周时间范围，五路分节，每节内「✅ 已核实要点（每条带链接+日期）」与「⚠️ 传闻」两栏，每路末尾「本周最值得关注的 2–3 项」。整体简洁、重「新」和「可核实」。
 重要：只输出周报 markdown 正文本身，不要任何额外说明/寒暄，不要用 ``` 代码块包裹整篇，不要写文件或执行 git（这些由外部脚本处理）。
 EOF
 
 # 无头联网调研，stdout 即周报正文
-timeout 1500 claude -p "$PROMPT" --model "$MODEL" --allowedTools WebSearch WebFetch > "$OUT" 2>> "$LOG"
+timeout 2100 claude -p "$PROMPT" --model "$MODEL" --allowedTools WebSearch WebFetch > "$OUT" 2>> "$LOG"
 rc=$?
 
 if [ $rc -ne 0 ] || [ ! -s "$OUT" ]; then
