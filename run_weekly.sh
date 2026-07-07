@@ -4,6 +4,11 @@
 set -uo pipefail
 export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
 
+# 本地代理（国内访问 Anthropic 必需）——cron 冷启动不继承交互态的代理变量，必须显式设置
+export http_proxy="http://127.0.0.1:7897"
+export https_proxy="http://127.0.0.1:7897"
+export all_proxy="socks5h://127.0.0.1:7897"
+
 REPO="/home/xp/playground/docs/weekly-report"
 cd "$REPO" || exit 1
 DATE="$(date +%F)"
@@ -36,6 +41,11 @@ read -r -d '' PROMPT <<'EOF'
 输出：markdown，开头写本周时间范围，五路分节，每节内「✅ 已核实要点（每条带链接+日期）」与「⚠️ 传闻」两栏，每路末尾「本周最值得关注的 2–3 项」。整体简洁、重「新」和「可核实」。
 重要：只输出周报 markdown 正文本身，不要任何额外说明/寒暄，不要用 ``` 代码块包裹整篇，不要写文件或执行 git（这些由外部脚本处理）。
 EOF
+
+# 代理可用性检查（cron 时刻代理若没起，claude 会 403 认证失败）
+if ! timeout 3 bash -c 'exec 3<>/dev/tcp/127.0.0.1/7897' 2>/dev/null; then
+  echo "!! 警告：代理 127.0.0.1:7897 不可达，claude 大概率认证失败（检查 Clash/代理是否开机自启）" >> "$LOG"
+fi
 
 # 无头联网调研，stdout 即周报正文
 timeout 2100 claude -p "$PROMPT" --model "$MODEL" --allowedTools WebSearch WebFetch > "$OUT" 2>> "$LOG"
