@@ -9,6 +9,10 @@ export http_proxy="http://127.0.0.1:7897"
 export https_proxy="http://127.0.0.1:7897"
 export all_proxy="socks5h://127.0.0.1:7897"
 
+# git 也走 SOCKS 代理隧道：国内 github SSH 直连 22/443 端口间歇性被封，隧道走代理最稳
+# （clone/api 一直走代理成功）。指定 github 专用 key。
+export GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 -i /home/xp/.ssh/id_ed25519_github_xpzwzwz -o IdentitiesOnly=yes -o ProxyCommand='nc -X 5 -x 127.0.0.1:7897 %h %p'"
+
 REPO="/home/xp/playground/docs/weekly-report"
 cd "$REPO" || exit 1
 DATE="$(date +%F)"
@@ -18,8 +22,8 @@ MODEL="claude-sonnet-4-6"
 
 echo "===== $(date '+%F %T') START =====" >> "$LOG"
 
-# 先同步远端（避免落后被拒）
-GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new" git pull --rebase --quiet origin main >> "$LOG" 2>&1 || true
+# 先同步远端（避免落后被拒；走上面配置的代理隧道 GIT_SSH_COMMAND）
+git pull --rebase --quiet origin main >> "$LOG" 2>&1 || true
 
 read -r -d '' PROMPT <<'EOF'
 你是「具身智能 + 大模型」五路进展周报的调研 agent。调研过去 7 天（重点最新）的进展，产出一份可快速扫完的 markdown 周报。
@@ -65,9 +69,9 @@ tmp="$(mktemp)"
 {
   echo "# weekly-report"
   echo
-  echo "「具身智能 + 大模型」三路进展周报存档 —— 本地 cron 每周一自动生成 + push。"
+  echo "「具身智能 + 大模型」五路进展周报存档 —— 本地 cron 每周一自动生成 + push。"
   echo
-  echo "- 第一路 VLA / 遥操作 / 具身数据 · 第二路 多模态大模型 · 第三路 大模型部署 infra"
+  echo "- ①VLA/遥操作/具身 · ②多模态大模型 · ③部署/推理 infra · ④轻量化/压缩 · ⑤训练进展"
   echo
   echo "## 报告列表"
   echo
@@ -79,9 +83,16 @@ tmp="$(mktemp)"
 
 git add -A
 if git commit -q -m "weekly report ${DATE}"; then
-  GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new" git push --quiet origin main >> "$LOG" 2>&1 \
-    && echo "===== $(date '+%F %T') DONE pushed $OUT =====" >> "$LOG" \
-    || echo "!! push 失败（已本地 commit）" >> "$LOG"
+  pushed=""
+  for i in 1 2 3; do
+    if git push --quiet origin main >> "$LOG" 2>&1; then pushed=1; break; fi
+    echo "!! push 第 $i 次失败，20s 后重试…" >> "$LOG"; sleep 20
+  done
+  if [ -n "$pushed" ]; then
+    echo "===== $(date '+%F %T') DONE pushed $OUT =====" >> "$LOG"
+  else
+    echo "!! push 三次均失败（已本地 commit；下次运行 pull+push 会自动补推积压的提交）" >> "$LOG"
+  fi
 else
   echo "!! 无变更可提交" >> "$LOG"
 fi
