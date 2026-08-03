@@ -6,6 +6,7 @@
 
 ## 报告列表
 
+- [2026-08-03](reports/2026-08-03-weekly.md)
 - [2026-07-27](reports/2026-07-27-weekly.md)
 - [2026-07-20](reports/2026-07-20-weekly.md)
 - [2026-07-13](reports/2026-07-13-weekly.md)
