@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 每周一由 cron 调用：三路联网调研 -> 写 reports/ -> commit -> SSH push
+# 每周一由 cron 调用：五路联网调研 -> 写 reports/ -> commit -> SSH push
 # 手动测试： bash run_weekly.sh
 set -uo pipefail
 export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
@@ -34,6 +34,15 @@ read -r -d '' PROMPT <<'EOF'
 - 绝不编造 arXiv 编号、模型名或公司发布。arXiv 形如 YYMM.xxxxx，排除未来日期的伪造编号。
 - 无实质新进展的路/项，如实说「本周无可核实新动态」，别拿旧的或重复的凑。
 - 覆盖通用大模型（不限具身/多模态域）。每路最多列 5–6 条最值得的已核实要点，保持精简。
+
+强制检索方法（不能只靠普通网页搜索）：
+1. 先确定明确的起止日期，并按五路分别建立候选池。arXiv 必须按 submittedDate 查询整个时间窗口的 v1 首次提交，不能用搜索引擎是否已收录来判断“本周无动态”。
+2. 每路使用宽关键词组合扫候选：VLA 同时覆盖 world model/teleoperation/tactile/retargeting/dataset/benchmark；多模态覆盖 VLM/video/OCR/visual encoder/agent；推理覆盖 release/scheduling/KV cache/P-D/kernel/serving/edge；压缩覆盖 quantization/pruning/distillation/sparsity/low-rank/KV quantization；训练覆盖 post-training/RL/rollout/optimizer/data mixture/scaling/MoE/distributed training/memory/communication。
+3. 再扫官方发布面：头部实验室与机器人公司官方 blog/模型卡，及 vLLM、SGLang、TensorRT-LLM、DeepSpeed、Megatron、FSDP/torchtitan、verl 等 GitHub Releases。普通搜索结果只用于发现线索。
+4. 对候选逐条打开一手源：论文核对 arXiv abs 页的标题、编号、v1 日期和摘要；软件核对 GitHub Release/tag 日期与正文；模型核对官方模型卡/博客；公司动态核对官方新闻稿。未打开一手源的候选不得写入“已核实”。
+5. “头部公司本周没发模型”不等于该路无动态。只有完成 arXiv 全窗口扫描、官方发布扫描和 GitHub Release 扫描后，才允许写“本周无可核实新动态”。
+6. 日期按正式公开日期判定；预创建但尚未正式发布的仓库不算发布。窗口外发布不得因仓库创建时间落在窗口内而提前收录，可在边界说明中注明并归下一期。
+7. 最后做交叉检查：确认五路不重复、每个链接可打开、所有数字均标【自报】、arXiv 编号年月与日期一致，并从候选池中仅保留每路最值得的 5–6 条。
 
 五路（注意边界，别互相重复）：
 第一路 — VLA / 遥操作 / 具身数据：新 VLA/操作策略模型（π/GR00T/Gemini Robotics/OpenVLA 系及开源新品）、世界模型造数、遥操作系统与灵巧手 retarget/力·触觉、新开源机器人数据集与真机 eval benchmark、大厂动态（PI/Figure/1X/NVIDIA/Tesla/Apptronik/Agility/Skild/智元/宇树/银河通用/千寻等）。
